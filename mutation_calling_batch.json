@@ -1,0 +1,7 @@
+{
+  "mutation_calling.tumorFastq": ["https://github.com/getwilds/wdl_101/blob/9f60f0255ee5298b8fb4b253b3fd010c5ae17e91/HCC4006_final.fastq", "https://github.com/getwilds/wdl_101/blob/9f60f0255ee5298b8fb4b253b3fd010c5ae17e91/CALU1_combined_final.fastq"],
+  "mutation_calling.normalFastq": "https://github.com/getwilds/wdl_101/blob/9f60f0255ee5298b8fb4b253b3fd010c5ae17e91/MOLM13_combined_final.fastq"
+}
+
+
+
