@@ -16,7 +16,7 @@ version 1.0
 ## Output Files:
 ## - An aligned bam for all 3 samples (with duplicates marked and base quality recalibrated)
 ## 
-## Workflow developed by Sitapriya Moorthi, Chris Lo and Taylor Firman @ Fred Hutch and Ash (Aisling) O'Farrell @ UCSC LMD: 02/28/24 for use by DaSL @ Fred Hutch.
+## Workflow developed by Sitapriya Moorthi, Chris Lo and Taylor Firman @ Fred Hutch and Ash (Aisling) O'Farrell @ UCSC LMD: 02/28/24 for use @ Fred Hutch.
 
 struct referenceGenome {
     File ref_fasta
@@ -33,8 +33,8 @@ struct referenceGenome {
 
 workflow mutation_calling {
   input {
-    Array[File] tumorFastq
-    File normalFastq
+    Array[File] tumorSamples
+    File normalSamples
 
     referenceGenome refGenome
     
@@ -51,7 +51,7 @@ workflow mutation_calling {
   }
  
   # Scatter for "tumor" samples   
-  scatter (tumorFastq in tumorFastq) {
+  scatter (tumorFastq in tumorSamples) {
     call BwaMem as tumorBwaMem {
       input:
         input_fastq = tumorFastq,
@@ -97,7 +97,7 @@ workflow mutation_calling {
   # Do for normal sample
   call BwaMem as normalBwaMem {
     input:
-      input_fastq = normalFastq,
+      input_fastq = normalSamples,
       refGenome = refGenome
   }
   
@@ -142,6 +142,7 @@ task BwaMem {
   input {
     File input_fastq
     referenceGenome refGenome
+    Int threads = 16
   }
   
   String base_file_name = basename(input_fastq, ".fastq")
@@ -167,7 +168,7 @@ task BwaMem {
     mv ~{refGenome.ref_sa} .
 
     bwa mem \
-      -p -v 3 -t 16 -M -R '@RG\t~{read_group_id}\t~{sample_name}\t~{platform_info}' \
+      -p -v 3 -t ~{threads} -M -R '@RG\t~{read_group_id}\t~{sample_name}\t~{platform_info}' \
       ~{ref_fasta_local} ~{input_fastq} > ~{base_file_name}.sam 
     samtools view -1bS -@ 15 -o ~{base_file_name}.aligned.bam ~{base_file_name}.sam
     samtools sort -@ 15 -o ~{base_file_name}.sorted_query_aligned.bam ~{base_file_name}.aligned.bam
