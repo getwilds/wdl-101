@@ -46,7 +46,6 @@ workflow mutation_calling {
     File af_only_gnomad
     File af_only_gnomad_index
     
-    File annovarTAR
     String annovar_protocols
     String annovar_operation
   }
@@ -90,7 +89,6 @@ workflow mutation_calling {
     input:
       input_vcf = Mutect2Paired.output_vcf,
       ref_name = refGenome.ref_name,
-      annovarTAR = annovarTAR,
       annovar_operation = annovar_operation,
       annovar_protocols = annovar_protocols
   }
@@ -347,7 +345,6 @@ task annovar {
   input {
     File input_vcf
     String ref_name
-    File annovarTAR
     String annovar_protocols
     String annovar_operation
   }
@@ -356,9 +353,7 @@ task annovar {
   command <<<
     set -eo pipefail
   
-    tar -xzvf ~{annovarTAR}
-  
-    perl annovar/table_annovar.pl ~{input_vcf} annovar/humandb/ \
+    perl /annovar/table_annovar.pl ~{input_vcf} /annovar/humandb/ \
       -buildver ~{ref_name} \
       -outfile ~{base_vcf_name} \
       -remove \
