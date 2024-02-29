@@ -1,6 +1,6 @@
 {
-  "mutation_calling.tumorSamples": ["/path/to/HCC4006_final.fastq", "/path/to/CALU1_combined_final.fastq"],
-  "mutation_calling.normalSamples": "/path/to/MOLM13_combined_final.fastq",
+  "mutation_calling.tumorFastq": ["/path/to/HCC4006_final.fastq", "/path/to/CALU1_combined_final.fastq"],
+  "mutation_calling.normalFastq": "/path/to/MOLM13_combined_final.fastq",
   "mutation_calling.refGenome": {
     "ref_fasta": "/fh/fast/paguirigan_a/pub/ReferenceDataSets/genome_data/human/hg19/Homo_sapiens_assembly19.fasta",
     "ref_fasta_index": "/fh/fast/paguirigan_a/pub/ReferenceDataSets/genome_data/human/hg19/Homo_sapiens_assembly19.fasta.fai",
