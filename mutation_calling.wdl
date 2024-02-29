@@ -33,8 +33,8 @@ struct referenceGenome {
 
 workflow mutation_calling {
   input {
-    Array[File] tumorSamples
-    File normalSamples
+    Array[File] tumorFastq
+    File normalFastq
 
     referenceGenome refGenome
     
@@ -51,7 +51,7 @@ workflow mutation_calling {
   }
  
   # Scatter for "tumor" samples   
-  scatter (tumorFastq in tumorSamples) {
+  scatter (tumorSamples in tumorFastq) {
     call BwaMem as tumorBwaMem {
       input:
         input_fastq = tumorFastq,
@@ -97,7 +97,7 @@ workflow mutation_calling {
   # Do for normal sample
   call BwaMem as normalBwaMem {
     input:
-      input_fastq = normalSamples,
+      input_fastq = normalFastq,
       refGenome = refGenome
   }
   
