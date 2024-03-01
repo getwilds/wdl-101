@@ -1,4 +1,4 @@
-# wdl_101
+# wdl-101
 This is the repository for the WDL and JSON files accompanying the WDL 101 course.
 You will find here the following:
 1. mutation_calling.wdl: this is a working WDL workflow
