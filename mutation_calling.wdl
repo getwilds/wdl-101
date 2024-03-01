@@ -54,7 +54,7 @@ workflow mutation_calling {
   scatter (tumorSamples in tumorFastq) {
     call BwaMem as tumorBwaMem {
       input:
-        input_fastq = tumorFastq,
+        input_fastq = tumorSamples,
         refGenome = refGenome
     }
     
