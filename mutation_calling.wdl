@@ -18,7 +18,9 @@ version 1.0
 ## 
 ## Workflow developed by Sitapriya Moorthi, Chris Lo and Taylor Firman @ Fred Hutch and Ash (Aisling) O'Farrell @ UCSC LMD: 02/28/24 for use @ Fred Hutch.
 
-struct referenceGenome {
+#### STRUCT DEFINITIONS
+
+struct ReferenceGenome {
     File ref_fasta
     File ref_fasta_index
     File ref_dict
@@ -30,13 +32,14 @@ struct referenceGenome {
     String ref_name
 }
 
+#### WORKFLOW DEFINITIONS
 
-workflow mutation_calling {
+workflow MutationCalling {
   input {
-    Array[File] tumorFastq
-    File normalFastq
+    Array[File] tumor_fastq
+    File normal_fastq
 
-    referenceGenome refGenome
+    ReferenceGenome refGenome
     
     File dbSNP_vcf
     File dbSNP_vcf_index
@@ -51,7 +54,7 @@ workflow mutation_calling {
   }
  
   # Scatter for "tumor" samples   
-  scatter (tumorSamples in tumorFastq) {
+  scatter (tumorSamples in tumor_fastq) {
     call BwaMem as tumorBwaMem {
       input:
         input_fastq = tumorSamples,
@@ -63,7 +66,7 @@ workflow mutation_calling {
         input_bam = tumorBwaMem.analysisReadySorted
     }
 
-    call ApplyBaseRecalibrator as tumorApplyBaseRecalibrator{
+    call ApplyBaseRecalibrator as tumorApplyBaseRecalibrator {
       input:
         input_bam = tumorMarkDuplicates.markDuplicates_bam,
         input_bam_index = tumorMarkDuplicates.markDuplicates_bai,
@@ -72,32 +75,32 @@ workflow mutation_calling {
         known_indels_sites_VCFs = known_indels_sites_VCFs,
         known_indels_sites_indices = known_indels_sites_indices,
         refGenome = refGenome
-      }
+    }
 
     call Mutect2Paired {
-    input:
-      tumor_bam = tumorApplyBaseRecalibrator.recalibrated_bam,
-      tumor_bam_index = tumorApplyBaseRecalibrator.recalibrated_bai,
-      normal_bam = normalApplyBaseRecalibrator.recalibrated_bam,
-      normal_bam_index = normalApplyBaseRecalibrator.recalibrated_bai,
-      refGenome = refGenome,
-      genomeReference = af_only_gnomad,
-      genomeReferenceIndex = af_only_gnomad_index
-  }
+      input:
+        tumor_bam = tumorApplyBaseRecalibrator.recalibrated_bam,
+        tumor_bam_index = tumorApplyBaseRecalibrator.recalibrated_bai,
+        normal_bam = normalApplyBaseRecalibrator.recalibrated_bam,
+        normal_bam_index = normalApplyBaseRecalibrator.recalibrated_bai,
+        refGenome = refGenome,
+        genomeReference = af_only_gnomad,
+        genomeReferenceIndex = af_only_gnomad_index
+    }
 
-  call annovar {
-    input:
-      input_vcf = Mutect2Paired.output_vcf,
-      ref_name = refGenome.ref_name,
-      annovar_operation = annovar_operation,
-      annovar_protocols = annovar_protocols
+    call annovar {
+      input:
+        input_vcf = Mutect2Paired.output_vcf,
+        ref_name = refGenome.ref_name,
+        annovar_operation = annovar_operation,
+        annovar_protocols = annovar_protocols
+    }
   }
-}
   
   # Do for normal sample
   call BwaMem as normalBwaMem {
     input:
-      input_fastq = normalFastq,
+      input_fastq = normal_fastq,
       refGenome = refGenome
   }
   
@@ -117,7 +120,6 @@ workflow mutation_calling {
       refGenome = refGenome
   }
 
-
   output {
     Array[File] tumoralignedBamSorted = tumorBwaMem.analysisReadySorted
     Array[File] tumorMarkDuplicates_bam = tumorMarkDuplicates.markDuplicates_bam
@@ -135,13 +137,14 @@ workflow mutation_calling {
     Array[File] Mutect2Paired_AnnotatedTable = annovar.output_annotated_table
   }
 }
-# TASK DEFINITIONS
+
+#### TASK DEFINITIONS
 
 # Align fastq file to the reference genome
 task BwaMem {
   input {
     File input_fastq
-    referenceGenome refGenome
+    ReferenceGenome refGenome
     Int threads = 16
   }
   
@@ -153,11 +156,8 @@ task BwaMem {
   String platform = "illumina"
   String platform_info = "PL:" + platform   # Create the platform information
 
-
   command <<<
     set -eo pipefail
-
-    #can we iterate through a struct??
     mv ~{refGenome.ref_fasta} .
     mv ~{refGenome.ref_fasta_index} .
     mv ~{refGenome.ref_dict} .
@@ -166,7 +166,6 @@ task BwaMem {
     mv ~{refGenome.ref_bwt} .
     mv ~{refGenome.ref_pac} .
     mv ~{refGenome.ref_sa} .
-
     bwa mem \
       -p -v 3 -t ~{threads} -M -R '@RG\t~{read_group_id}\t~{sample_name}\t~{platform_info}' \
       ~{ref_fasta_local} ~{input_fastq} > ~{base_file_name}.sam 
@@ -206,16 +205,16 @@ task MarkDuplicates {
       --VALIDATION_STRINGENCY SILENT
   >>>
 
-  runtime {
-    docker: "ghcr.io/getwilds/gatk:4.3.0.0"
-    memory: "48 GB"
-    cpu: 4
-  }
-
   output {
     File markDuplicates_bam = "~{output_bam}"
     File markDuplicates_bai = "~{output_bai}"
     File duplicate_metrics = "~{metrics_file}"
+  }
+
+  runtime {
+    docker: "ghcr.io/getwilds/gatk:4.3.0.0"
+    memory: "48 GB"
+    cpu: 4
   }
 }
 
@@ -228,7 +227,7 @@ task ApplyBaseRecalibrator {
     File dbSNP_vcf_index
     File known_indels_sites_VCFs
     File known_indels_sites_indices
-    referenceGenome refGenome
+    ReferenceGenome refGenome
   }
   
   String base_file_name = basename(input_bam, ".duplicates_marked.bam")
@@ -237,48 +236,38 @@ task ApplyBaseRecalibrator {
   String dbSNP_vcf_local = basename(dbSNP_vcf)
   String known_indels_sites_VCFs_local = basename(known_indels_sites_VCFs)
 
-
   command <<<
-  set -eo pipefail
-
-  mv ~{refGenome.ref_fasta} .
-  mv ~{refGenome.ref_fasta_index} .
-  mv ~{refGenome.ref_dict} .
-
-  mv ~{dbSNP_vcf} .
-  mv ~{dbSNP_vcf_index} .
-
-  mv ~{known_indels_sites_VCFs} .
-  mv ~{known_indels_sites_indices} .
-
-  samtools index ~{input_bam} #redundant? markduplicates already does this?
-
-  gatk --java-options "-Xms8g" \
-      BaseRecalibrator \
-      -R ~{ref_fasta_local} \
-      -I ~{input_bam} \
-      -O ~{base_file_name}.recal_data.csv \
-      --known-sites ~{dbSNP_vcf_local} \
-      --known-sites ~{known_indels_sites_VCFs_local} \
-      
-
-  gatk --java-options "-Xms8g" \
-      ApplyBQSR \
-      -bqsr ~{base_file_name}.recal_data.csv \
-      -I ~{input_bam} \
-      -O ~{base_file_name}.recal.bam \
-      -R ~{ref_fasta_local} \
-      
-
-  #finds the current sort order of this bam file
-  samtools view -H ~{base_file_name}.recal.bam | grep @SQ | sed 's/@SQ\tSN:\|LN://g' > ~{base_file_name}.sortOrder.txt
->>>
+    set -eo pipefail
+    mv ~{refGenome.ref_fasta} .
+    mv ~{refGenome.ref_fasta_index} .
+    mv ~{refGenome.ref_dict} .
+    mv ~{dbSNP_vcf} .
+    mv ~{dbSNP_vcf_index} .
+    mv ~{known_indels_sites_VCFs} .
+    mv ~{known_indels_sites_indices} .
+    samtools index ~{input_bam}
+    gatk --java-options "-Xms8g" \
+        BaseRecalibrator \
+        -R ~{ref_fasta_local} \
+        -I ~{input_bam} \
+        -O ~{base_file_name}.recal_data.csv \
+        --known-sites ~{dbSNP_vcf_local} \
+        --known-sites ~{known_indels_sites_VCFs_local}
+    gatk --java-options "-Xms8g" \
+        ApplyBQSR \
+        -bqsr ~{base_file_name}.recal_data.csv \
+        -I ~{input_bam} \
+        -O ~{base_file_name}.recal.bam \
+        -R ~{ref_fasta_local}
+    samtools view -H ~{base_file_name}.recal.bam | grep @SQ | sed 's/@SQ\tSN:\|LN://g' > ~{base_file_name}.sortOrder.txt
+  >>>
 
   output {
     File recalibrated_bam = "~{base_file_name}.recal.bam"
     File recalibrated_bai = "~{base_file_name}.recal.bai"
     File sortOrder = "~{base_file_name}.sortOrder.txt"
   }
+
   runtime {
     memory: "36 GB"
     cpu: 2
@@ -287,14 +276,14 @@ task ApplyBaseRecalibrator {
 }
 
 # Mutect 2 calling tumor-normal
-
 task Mutect2Paired {
   input {
     File tumor_bam
     File tumor_bam_index
     File normal_bam
     File normal_bam_index
-    referenceGenome refGenome
+
+    ReferenceGenome refGenome
     File genomeReference
     File genomeReferenceIndex
   }
@@ -306,38 +295,33 @@ task Mutect2Paired {
 
   command <<<
     set -eo pipefail
-
     mv ~{refGenome.ref_fasta} .
     mv ~{refGenome.ref_fasta_index} .
     mv ~{refGenome.ref_dict} .
-
     mv ~{genomeReference} .
     mv ~{genomeReferenceIndex} .
-
     gatk --java-options "-Xms16g" Mutect2 \
       -R ~{ref_fasta_local} \
       -I ~{tumor_bam} \
       -I ~{normal_bam} \
       -O preliminary.vcf.gz \
-      --germline-resource ~{genomeReference_local} \
-
+      --germline-resource ~{genomeReference_local}
     gatk --java-options "-Xms16g" FilterMutectCalls \
       -V preliminary.vcf.gz \
       -O ~{base_file_name_tumor}.mutect2.vcf.gz \
       -R ~{ref_fasta_local} \
-      --stats preliminary.vcf.gz.stats \
+      --stats preliminary.vcf.gz.stats
+  >>>
 
->>>
+  output {
+    File output_vcf = "${base_file_name_tumor}.mutect2.vcf.gz"
+    File output_vcf_index = "${base_file_name_tumor}.mutect2.vcf.gz.tbi"
+  }
 
   runtime {
     docker: "ghcr.io/getwilds/gatk:4.3.0.0"
     memory: "24 GB"
     cpu: 1
-  }
-
-  output {
-    File output_vcf = "${base_file_name_tumor}.mutect2.vcf.gz"
-    File output_vcf_index = "${base_file_name_tumor}.mutect2.vcf.gz.tbi"
   }
 }
 
@@ -349,11 +333,11 @@ task annovar {
     String annovar_protocols
     String annovar_operation
   }
+
   String base_vcf_name = basename(input_vcf, ".vcf.gz")
   
   command <<<
     set -eo pipefail
-  
     perl /annovar/table_annovar.pl ~{input_vcf} /annovar/humandb/ \
       -buildver ~{ref_name} \
       -outfile ~{base_vcf_name} \
@@ -361,71 +345,18 @@ task annovar {
       -protocol ~{annovar_protocols} \
       -operation ~{annovar_operation} \
       -nastring . -vcfinput
->>>
+  >>>
+
+  output {
+    File output_annotated_vcf = "${base_vcf_name}.${ref_name}_multianno.vcf"
+    File output_annotated_table = "${base_vcf_name}.${ref_name}_multianno.txt"
+  }
+
   runtime {
     docker : "ghcr.io/getwilds/annovar:${ref_name}"
     cpu: 1
     memory: "2GB"
   }
-  output {
-    File output_annotated_vcf = "${base_vcf_name}.${ref_name}_multianno.vcf"
-    File output_annotated_table = "${base_vcf_name}.${ref_name}_multianno.txt"
-  }
 }
-
-
-
-# Mutect 2 calling tumor only
-
-#task Mutect2TumorOnly {
-#  input {
-#    File input_bam
-#    File input_bam_index
-#    File ref_dict
-#    File ref_fasta
-#    File ref_fasta_index
-#    File genomeReference
-#    File genomeReferenceIndex
-#  }
-#
-#    String base_file_name = basename(input_bam, ".recal.bam")
-#    String ref_fasta_local = basename(ref_fasta)
-#    String genomeReference_local = basename(genomeReference)
-#
-#command <<<
-#    set -eo pipefail
-#
-#    mv ~{ref_fasta} .
-#    mv ~{ref_fasta_index} .
-#    mv ~{ref_dict} .
-#    mv ~{genomeReference} .
-#    mv ~{genomeReferenceIndex} .
-#
-#    gatk --java-options "-Xms16g" Mutect2 \
-#      -R ~{ref_fasta_local} \
-#      -I ~{input_bam} \
-#      -O preliminary.vcf.gz \
-#      --germline-resource ~{genomeReference_local} \
-#     
-#    gatk --java-options "-Xms16g" FilterMutectCalls \
-#      -V preliminary.vcf.gz \
-#      -O ~{base_file_name}.mutect2.vcf.gz \
-#      -R ~{ref_fasta_local} \
-#      --stats preliminary.vcf.gz.stats \
-#     
-#>>>
-#
-#runtime {
-#    docker: "ghcr.io/getwilds/gatk:4.3.0.0"
-#    memory: "24 GB"
-#    cpu: 1
-#  }
-#
-#output {
-#    File output_vcf = "${base_file_name}.mutect2.vcf.gz"
-#    File output_vcf_index = "${base_file_name}.mutect2.vcf.gz.tbi"
-#  }
-#
-#}
 
 
