@@ -139,21 +139,10 @@ workflow mutation_calling {
     Array[File] Mutect2Paired_AnnotatedVcf = annovar.output_annotated_vcf
     Array[File] Mutect2Paired_AnnotatedTable = annovar.output_annotated_table
   }
-}
 
-parameter_meta {
+  parameter_meta {
     tumorFastq: "Sample tumor .fastq (expects Illumina) in array"
     normalFastq: "Sample normal .fastq (expects Illumina)"
-
-    refGenome.ref_fasta: "Reference genome to align reads to"
-    refGenome.ref_fasta_index: "Reference genome index file (created by bwa index)"
-    refGenome.ref_dict: "Reference genome dictionary file (created by bwa index)"
-    refGenome.ref_amb: "Reference genome non-ATCG file (created by bwa index)"
-    refGenome.ref_ann: "Reference genome ref seq annotation file (created by bwa index)"
-    refGenome.ref_bwt: "Reference genome binary file (created by bwa index)"
-    refGenome.ref_pac: "Reference genome binary file (created by bwa index)"
-    refGenome.ref_sa: "Reference genome binary file (created by bwa index)"
-    refGenome.ref_name: "Reference genome name (hg19, hg37, etc.)"
 
     dbSNP_vcf: "dbSNP VCF for mutation calling"
     dbSNP_vcf_index: "dbSNP VCF index"
@@ -166,7 +155,10 @@ parameter_meta {
     annovar_operation: "annovar operation: see https://annovar.openbioinformatics.org/en/latest/user-guide/startup"
 
     bwa_mem_threads: "Number of threads for bwa threading"
+  }
 }
+
+
 
 # TASK DEFINITIONS
 
