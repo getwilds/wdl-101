@@ -371,7 +371,7 @@ task annovar {
   command <<<
     set -eo pipefail
   
-    perl annovar/table_annovar.pl "~{input_vcf}" annovar/humandb/ \
+    perl /annovar/table_annovar.pl "~{input_vcf}" /annovar/humandb/ \
       -buildver "~{ref_name}" \
       -outfile "~{base_vcf_name}" \
       -remove \
@@ -380,7 +380,7 @@ task annovar {
       -nastring . -vcfinput
   >>>
   runtime {
-    docker: "ghcr.io/getwilds/annovar:~{ref_name}"
+    docker : "ghcr.io/getwilds/annovar:${ref_name}"
     cpu: 1
     memory: "2GB"
   }
