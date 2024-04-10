@@ -41,6 +41,9 @@ workflow mutation_calling {
     Array[pairedSample] samples
 
     referenceGenome refGenome
+
+    # Optional variable for bwa mem
+    Int? bwa_mem_threads
     
     # Files for specific tools
     File dbSNP_vcf
@@ -56,14 +59,16 @@ workflow mutation_calling {
   }
 
  
-  # Scatter for each sample in samples
+# Scatter across tumor and normal for each sample
+# Perform all tasks for tumors and normals separately until Mutect2 and Annovar
   scatter (sample in samples) {
 
     #Tumors
     call BwaMem as tumorBwaMem {
       input:
         input_fastq = sample.tumorSample,
-        refGenome = refGenome
+        refGenome = refGenome,
+        threads = bwa_mem_threads
     }
     
     call MarkDuplicates as tumorMarkDuplicates {
@@ -86,7 +91,8 @@ workflow mutation_calling {
     call BwaMem as normalBwaMem {
       input:
         input_fastq = sample.normalSample,
-        refGenome = refGenome
+        refGenome = refGenome,
+        threads = bwa_mem_threads
     }
     
     call MarkDuplicates as normalMarkDuplicates {
@@ -168,6 +174,7 @@ task BwaMem {
   input {
     File input_fastq
     referenceGenome refGenome
+    Int threads = 16  # if a workflow passes an optional variable with no value, fall back to 16
   }
   
   String base_file_name = basename(input_fastq, ".fastq")
@@ -191,7 +198,7 @@ task BwaMem {
     mv "~{refGenome.ref_sa}" .
 
     bwa mem \
-      -p -v 3 -t 16 -M -R '@RG\t~{read_group_id}\t~{sample_name}\t~{platform_info}' \
+      -p -v 3 -t ~{threads} -M -R '@RG\t~{read_group_id}\t~{sample_name}\t~{platform_info}' \
       "~{ref_fasta_local}" "~{input_fastq}" > "~{base_file_name}.sam" 
     samtools view -1bS -@ 15 -o "~{base_file_name}.aligned.bam" "~{base_file_name}.sam"
     samtools sort -@ 15 -o "~{base_file_name}.sorted_query_aligned.bam" "~{base_file_name}.aligned.bam"
@@ -306,7 +313,7 @@ task ApplyBaseRecalibrator {
   }
 }
 
-# Variant calling via mutect2 (tumor-and-normal mode)
+# Variant calling via Mutect2 (Paired mode)
 task Mutect2Paired {
   input {
     File tumor_bam
@@ -358,7 +365,7 @@ task Mutect2Paired {
   }
 }
 
-# Annotate VCF using annovar
+# Annotate VCF using Annovar
 task annovar {
   input {
     File input_vcf
