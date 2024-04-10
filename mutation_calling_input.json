@@ -1,6 +1,8 @@
 {
-  "mutation_calling.tumorFastq": ["/path/to/HCC4006_final.fastq", "/path/to/CALU1_combined_final.fastq"],
-  "mutation_calling.normalFastq": "/path/to/MOLM13_combined_final.fastq",
+  "mutation_calling.samples": [{"tumorSample": "path_to/HCC4006_final.fastq",
+                                "normalSample": "path_to/MOLM13_combined_final.fastq"},
+                               {"tumorSample": "path_to/CALU1_combined_final.fastq",
+                                "normalSample": "path_to/MOLM13_combined_final.fastq"}],
   "mutation_calling.refGenome": {
     "ref_fasta": "/fh/fast/paguirigan_a/pub/ReferenceDataSets/genome_data/human/hg19/Homo_sapiens_assembly19.fasta",
     "ref_fasta_index": "/fh/fast/paguirigan_a/pub/ReferenceDataSets/genome_data/human/hg19/Homo_sapiens_assembly19.fasta.fai",
@@ -21,4 +23,3 @@
   "mutation_calling.annovar_protocols": "refGene,knownGene,cosmic70,esp6500siv2_all,clinvar_20180603,gnomad211_exome",
   "mutation_calling.annovar_operation": "g,f,f,f,f,f"
 }
-
