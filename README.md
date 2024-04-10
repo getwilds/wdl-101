@@ -1,5 +1,5 @@
-# wdl-101
-This is the repository for the WDL and JSON files accompanying the WDL 101 course.
+# Developing WDL Workflows
+This is the repository for the WDL and JSON files accompanying the Developing WDL Workflows guide.
 You will find here the following:
 1. mutation_calling.wdl: this is a working WDL workflow
 2. mutation_calling_input_fh.json: this JSON is meant for use by the Fred Hutch community. It points to file paths that are accessible only with Fred Hutch credentials
